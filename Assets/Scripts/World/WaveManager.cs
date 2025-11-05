@@ -226,13 +226,22 @@ namespace Kingdoms.World
                 ProfessionType profession = professions?[i] ?? ProfessionType.None;
                 npc.name = $"NPC_W{_currentWave:00}_{i:00}_{profession}";
 
-                // Assign profession if enabled
+                // Assign profession if enabled (but it will be disabled until disembark)
                 if (profession != ProfessionType.None)
                 {
                     NPCController controller = npc.GetComponent<NPCController>();
                     if (controller != null)
                     {
                         controller.AssignProfession(profession);
+
+                        // IMPORTANT: Disable the profession until NPC disembarks
+                        // The profession component will be enabled by BoatController when landing
+                        NPCProfession professionComponent = npc.GetComponent<NPCProfession>();
+                        if (professionComponent != null)
+                        {
+                            professionComponent.enabled = false;
+                            Debug.Log($"WaveManager: {npc.name} profession disabled until disembark");
+                        }
                     }
                     else
                     {

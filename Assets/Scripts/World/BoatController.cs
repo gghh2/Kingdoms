@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Kingdoms.Managers;
+using Kingdoms.NPC;
 
 namespace Kingdoms.World
 {
@@ -304,12 +305,15 @@ namespace Kingdoms.World
         {
             // Calculate disembark position (in front of boat)
             Vector3 disembarkPos = landingPoint.position + transform.TransformDirection(disembarkOffset);
-            
+
             for (int i = 0; i < _passengers.Count; i++)
             {
                 GameObject passenger = _passengers[i];
                 if (passenger == null) continue;
-                
+
+                // Skip player (already disembarked)
+                if (passenger.CompareTag("Player")) continue;
+
                 // Position passenger near landing point
                 Vector3 offset = new Vector3(
                     Random.Range(-2f, 2f),
@@ -317,15 +321,23 @@ namespace Kingdoms.World
                     Random.Range(-2f, 2f)
                 );
                 passenger.transform.position = disembarkPos + offset;
-                
-                // NPC controller stays enabled (already was during voyage)
-                
-                Debug.Log($"BoatController: {passenger.name} disembarked");
+
+                // IMPORTANT: Re-enable the profession now that NPC has disembarked
+                NPCProfession profession = passenger.GetComponent<NPCProfession>();
+                if (profession != null)
+                {
+                    profession.enabled = true;
+                    Debug.Log($"BoatController: {passenger.name} disembarked - profession {profession.Type} enabled");
+                }
+                else
+                {
+                    Debug.Log($"BoatController: {passenger.name} disembarked (no profession)");
+                }
             }
-            
+
             // Clear passenger list
             _passengers.Clear();
-            
+
             // Destroy boat after a delay
             Destroy(gameObject, 5f);
         }
