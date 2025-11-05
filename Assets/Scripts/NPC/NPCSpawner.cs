@@ -1,6 +1,7 @@
 using UnityEngine;
 using Kingdoms.Managers;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace Kingdoms.NPC
 {
@@ -25,6 +26,12 @@ namespace Kingdoms.NPC
         
         [Tooltip("Spawn NPCs on Start")]
         [SerializeField] private bool spawnOnStart = true;
+        
+        [Tooltip("Assign random professions to spawned NPCs")]
+        [SerializeField] private bool assignRandomProfessions = true;
+        
+        [Tooltip("Ensure at least one Colony Leader (ALWAYS recommended for first boat)")]
+        [SerializeField] private bool guaranteeColonyLeader = true;
         
         [Header("Terrain Detection")]
         [Tooltip("Height to start raycast from (above highest possible terrain)")]
@@ -87,6 +94,8 @@ namespace Kingdoms.NPC
         /// </summary>
         public void SpawnNPCs()
         {
+            Debug.Log($"NPCSpawner.SpawnNPCs() called - assignRandomProfessions: {assignRandomProfessions}, guaranteeColonyLeader: {guaranteeColonyLeader}");
+            
             if (_hasSpawned)
             {
                 Debug.LogWarning("NPCSpawner: NPCs already spawned!");
@@ -106,11 +115,37 @@ namespace Kingdoms.NPC
                 _npcParent = parentObj.transform;
             }
             
+            // Get profession assignments if enabled
+            List<ProfessionType> professions = null;
+            if (assignRandomProfessions)
+            {
+                Debug.Log($"NPCSpawner: Assigning random professions (guaranteeColonyLeader: {guaranteeColonyLeader})");
+                
+                professions = guaranteeColonyLeader 
+                    ? ProfessionSelector.SelectGroupProfessions(spawnCount, forceColonyLeader: true)
+                    : GenerateRandomProfessions(spawnCount);
+                    
+                Debug.Log($"NPCSpawner: Generated profession distribution for {spawnCount} NPCs" + 
+                         (guaranteeColonyLeader ? " (1 Colony Leader guaranteed)" : ""));
+                         
+                // Log the actual professions
+                string professionList = "Professions: ";
+                for (int i = 0; i < professions.Count; i++)
+                {
+                    professionList += $"{i}:{professions[i]} ";
+                }
+                Debug.Log(professionList);
+            }
+            else
+            {
+                Debug.Log("NPCSpawner: Random professions DISABLED - NPCs will have no profession");
+            }
+            
             // Spawn NPCs
             int successfulSpawns = 0;
             for (int i = 0; i < spawnCount; i++)
             {
-                if (SpawnSingleNPC(i))
+                if (SpawnSingleNPC(i, professions?[i] ?? ProfessionType.None))
                 {
                     successfulSpawns++;
                 }
@@ -124,7 +159,7 @@ namespace Kingdoms.NPC
         /// Spawn a single NPC at random position on terrain
         /// </summary>
         /// <returns>True if spawn was successful</returns>
-        private bool SpawnSingleNPC(int index)
+        private bool SpawnSingleNPC(int index, ProfessionType profession)
         {
             // Try to find valid spawn position (with retries)
             Vector3 spawnPosition;
@@ -137,12 +172,18 @@ namespace Kingdoms.NPC
                 {
                     // Spawn NPC
                     GameObject npc = Instantiate(npcPrefab, spawnPosition, Quaternion.identity, _npcParent);
-                    npc.name = $"NPC_{index:00}";
+                    npc.name = $"NPC_{index:00}_{profession}";
                     
                     // Verify it has NPCController
-                    if (npc.GetComponent<NPCController>() == null)
+                    NPCController controller = npc.GetComponent<NPCController>();
+                    if (controller == null)
                     {
                         Debug.LogWarning($"NPCSpawner: Spawned NPC {npc.name} doesn't have NPCController!");
+                    }
+                    else if (profession != ProfessionType.None)
+                    {
+                        // Assign profession
+                        controller.AssignProfession(profession);
                     }
                     
                     foundValidPosition = true;
@@ -195,6 +236,36 @@ namespace Kingdoms.NPC
                 _hasSpawned = false;
                 Debug.Log("NPCSpawner: Cleared all NPCs");
             }
+        }
+        
+        /// <summary>
+        /// Test spawning (for Inspector button)
+        /// </summary>
+        [ContextMenu("Test Spawn NPCs")]
+        private void TestSpawnNPCs()
+        {
+            // Clear existing NPCs
+            ClearNPCs();
+            
+            // Force spawn
+            SpawnNPCs();
+        }
+        
+        #endregion
+        
+        #region Profession Assignment
+        
+        /// <summary>
+        /// Generate random professions without guarantees
+        /// </summary>
+        private List<ProfessionType> GenerateRandomProfessions(int count)
+        {
+            List<ProfessionType> professions = new List<ProfessionType>();
+            for (int i = 0; i < count; i++)
+            {
+                professions.Add(ProfessionSelector.SelectRandomProfession());
+            }
+            return professions;
         }
         
         #endregion

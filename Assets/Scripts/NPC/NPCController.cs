@@ -30,6 +30,10 @@ namespace Kingdoms.NPC
         [Tooltip("How fast the NPC rotates towards movement direction")]
         [SerializeField] private float rotationSpeed = 5f;
         
+        [Header("Profession")]
+        [Tooltip("NPC's profession - determines behavior")]
+        [SerializeField] private ProfessionType professionType = ProfessionType.None;
+        
         #endregion
         
         #region Private Fields
@@ -41,12 +45,15 @@ namespace Kingdoms.NPC
         private float _stateTimer;
         private float _gravity = -9.81f;
         private Vector3 _velocity;
+        private NPCProfession _profession;
         
         #endregion
         
         #region Properties
         
         public NPCState CurrentState => _currentState;
+        public ProfessionType Profession => professionType;
+        public bool HasProfession => _profession != null;
         
         #endregion
         
@@ -60,14 +67,23 @@ namespace Kingdoms.NPC
         
         private void Start()
         {
-            // Start in idle state
+            // Assign profession if specified
+            AssignProfession(professionType);
+            
+            // Start in idle state (will be overridden by profession if exists)
             ChangeState(NPCState.Idle);
         }
         
         private void Update()
         {
             ApplyGravity();
-            UpdateState();
+            
+            // If NPC has profession, let profession control behavior
+            // Otherwise use basic state machine
+            if (_profession == null)
+            {
+                UpdateState();
+            }
         }
         
         #endregion
@@ -209,6 +225,59 @@ namespace Kingdoms.NPC
             {
                 _velocity.y = -2f;
             }
+        }
+        
+        #endregion
+        
+        #region Profession Management
+        
+        /// <summary>
+        /// Assign a profession to this NPC
+        /// </summary>
+        public void AssignProfession(ProfessionType type)
+        {
+            if (type == ProfessionType.None)
+            {
+                return;
+            }
+            
+            professionType = type;
+            
+            // Remove old profession if exists
+            if (_profession != null)
+            {
+                Destroy(_profession);
+                _profession = null;
+            }
+            
+            // Add new profession component
+            _profession = type switch
+            {
+                ProfessionType.ColonyLeader => gameObject.AddComponent<ColonyLeaderProfession>(),
+                ProfessionType.Hunter => gameObject.AddComponent<HunterProfession>(),
+                // TODO: Add other professions as they are implemented
+                // ProfessionType.Blacksmith => gameObject.AddComponent<BlacksmithProfession>(),
+                // ProfessionType.Miner => gameObject.AddComponent<MinerProfession>(),
+                // etc...
+                _ => null
+            };
+            
+            if (_profession != null)
+            {
+                Debug.Log($"{gameObject.name}: Assigned profession {type}");
+            }
+            else
+            {
+                Debug.LogWarning($"{gameObject.name}: Profession {type} not yet implemented!");
+            }
+        }
+        
+        /// <summary>
+        /// Get the CharacterController component (for profession use)
+        /// </summary>
+        public CharacterController GetCharacterController()
+        {
+            return _controller;
         }
         
         #endregion
