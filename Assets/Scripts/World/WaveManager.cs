@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using Kingdoms.Managers;
+using Kingdoms.NPC;
 
 namespace Kingdoms.World
 {
@@ -40,10 +42,17 @@ namespace Kingdoms.World
         [Header("Player Settings")]
         [Tooltip("Player GameObject")]
         [SerializeField] private GameObject player;
-        
+
         [Tooltip("Enable player on first wave")]
         [SerializeField] private bool playerArrivesOnFirstWave = true;
-        
+
+        [Header("Profession Settings")]
+        [Tooltip("Assign random professions to spawned NPCs")]
+        [SerializeField] private bool assignRandomProfessions = true;
+
+        [Tooltip("Ensure at least one Colony Leader per wave (recommended for first wave)")]
+        [SerializeField] private bool guaranteeColonyLeader = true;
+
         #endregion
         
         #region Private Fields
@@ -182,16 +191,67 @@ namespace Kingdoms.World
             
             // Determine number of NPCs for this wave
             int npcCount = Random.Range(minNPCsPerWave, maxNPCsPerWave + 1);
-            
+
+            // Get profession assignments if enabled
+            List<ProfessionType> professions = null;
+            if (assignRandomProfessions)
+            {
+                bool shouldGuaranteeLeader = guaranteeColonyLeader && isFirstWave;
+                Debug.Log($"WaveManager: Assigning random professions (guaranteeColonyLeader: {shouldGuaranteeLeader})");
+
+                professions = shouldGuaranteeLeader
+                    ? ProfessionSelector.SelectGroupProfessions(npcCount, forceColonyLeader: true)
+                    : GenerateRandomProfessions(npcCount);
+
+                Debug.Log($"WaveManager: Generated profession distribution for {npcCount} NPCs" +
+                         (shouldGuaranteeLeader ? " (1 Colony Leader guaranteed)" : ""));
+
+                // Log the actual professions
+                string professionList = "Professions: ";
+                for (int i = 0; i < professions.Count; i++)
+                {
+                    professionList += $"{i}:{professions[i]} ";
+                }
+                Debug.Log(professionList);
+            }
+            else
+            {
+                Debug.Log("WaveManager: Random professions DISABLED - NPCs will have no profession");
+            }
+
             // Spawn NPCs and add them to boat
             for (int i = 0; i < npcCount; i++)
             {
                 GameObject npc = Instantiate(npcPrefab);
-                npc.name = $"NPC_W{_currentWave:00}_{i:00}";
-                
+                ProfessionType profession = professions?[i] ?? ProfessionType.None;
+                npc.name = $"NPC_W{_currentWave:00}_{i:00}_{profession}";
+
+                // Assign profession if enabled (but it will be disabled until disembark)
+                if (profession != ProfessionType.None)
+                {
+                    NPCController controller = npc.GetComponent<NPCController>();
+                    if (controller != null)
+                    {
+                        controller.AssignProfession(profession);
+
+                        // IMPORTANT: Disable the profession until NPC disembarks
+                        // The profession component will be enabled by BoatController when landing
+                        NPCProfession professionComponent = npc.GetComponent<NPCProfession>();
+                        if (professionComponent != null)
+                        {
+                            professionComponent.enabled = false;
+                            Debug.Log($"WaveManager: {npc.name} profession disabled until disembark");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"WaveManager: NPC {npc.name} doesn't have NPCController!");
+                    }
+                }
+
                 boatController.AddPassenger(npc);
             }
-            
+
             Debug.Log($"WaveManager: Wave {_currentWave} created with {npcCount} NPCs");
             
             // Start boat journey
@@ -206,7 +266,24 @@ namespace Kingdoms.World
         }
         
         #endregion
-        
+
+        #region Profession Assignment
+
+        /// <summary>
+        /// Generate random professions without guarantees
+        /// </summary>
+        private List<ProfessionType> GenerateRandomProfessions(int count)
+        {
+            List<ProfessionType> professions = new List<ProfessionType>();
+            for (int i = 0; i < count; i++)
+            {
+                professions.Add(ProfessionSelector.SelectRandomProfession());
+            }
+            return professions;
+        }
+
+        #endregion
+
         #region Public Methods
         
         /// <summary>
