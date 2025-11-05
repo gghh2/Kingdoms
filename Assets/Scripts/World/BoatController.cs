@@ -302,30 +302,71 @@ namespace Kingdoms.World
         /// </summary>
         private void DisembarkPassengers()
         {
-            // Calculate disembark position (in front of boat)
-            Vector3 disembarkPos = landingPoint.position + transform.TransformDirection(disembarkOffset);
-            
+            // Calculate base disembark position (in front of boat)
+            Vector3 disembarkBasePos = landingPoint.position + transform.TransformDirection(disembarkOffset);
+
+            // Get Ground layer for raycast
+            int groundLayer = LayerMask.GetMask("Ground");
+            if (groundLayer == 0)
+            {
+                Debug.LogWarning("BoatController: 'Ground' layer not found, using all layers for raycast");
+                groundLayer = -1; // All layers
+            }
+
             for (int i = 0; i < _passengers.Count; i++)
             {
                 GameObject passenger = _passengers[i];
                 if (passenger == null) continue;
-                
-                // Position passenger near landing point
-                Vector3 offset = new Vector3(
-                    Random.Range(-2f, 2f),
+
+                // Calculate random horizontal offset
+                Vector3 horizontalOffset = new Vector3(
+                    Random.Range(-3f, 3f),
                     0f,
-                    Random.Range(-2f, 2f)
+                    Random.Range(-3f, 3f)
                 );
-                passenger.transform.position = disembarkPos + offset;
-                
-                // NPC controller stays enabled (already was during voyage)
-                
-                Debug.Log($"BoatController: {passenger.name} disembarked");
+
+                // Target position (horizontal only)
+                Vector3 targetHorizontalPos = disembarkBasePos + horizontalOffset;
+
+                // Raycast from above to find ground
+                Vector3 rayStart = new Vector3(targetHorizontalPos.x, targetHorizontalPos.y + 50f, targetHorizontalPos.z);
+
+                Vector3 finalPosition;
+                if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 100f, groundLayer))
+                {
+                    // Found ground, place NPC on terrain
+                    finalPosition = hit.point + Vector3.up * 0.5f; // Small offset above ground
+                    Debug.Log($"BoatController: {passenger.name} disembarked on terrain at {finalPosition}");
+                }
+                else
+                {
+                    // Fallback: use landing point position if raycast fails
+                    finalPosition = landingPoint.position + horizontalOffset;
+                    Debug.LogWarning($"BoatController: Raycast failed for {passenger.name}, using fallback position");
+                }
+
+                // Set passenger position
+                passenger.transform.position = finalPosition;
+
+                // CRITICAL: Enable profession now that NPC has disembarked
+                var npcController = passenger.GetComponent<NPC.NPCController>();
+                if (npcController != null && npcController.HasProfession)
+                {
+                    // Get the profession component and enable it
+                    var professionComponent = passenger.GetComponent<NPC.NPCProfession>();
+                    if (professionComponent != null)
+                    {
+                        professionComponent.enabled = true;
+                        Debug.Log($"BoatController: {passenger.name} profession {npcController.Profession} ENABLED after disembark");
+                    }
+                }
+
+                Debug.Log($"BoatController: {passenger.name} disembarked successfully");
             }
-            
+
             // Clear passenger list
             _passengers.Clear();
-            
+
             // Destroy boat after a delay
             Destroy(gameObject, 5f);
         }

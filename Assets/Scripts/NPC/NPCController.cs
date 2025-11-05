@@ -261,10 +261,13 @@ namespace Kingdoms.NPC
                 // etc...
                 _ => null
             };
-            
+
             if (_profession != null)
             {
-                Debug.Log($"{gameObject.name}: Assigned profession {type}");
+                // CRITICAL: Disable profession until NPC disembarks from boat
+                // This prevents NPCs from acting while still on the boat
+                _profession.enabled = false;
+                Debug.Log($"{gameObject.name}: Assigned profession {type} (DISABLED until disembark)");
             }
             else
             {
