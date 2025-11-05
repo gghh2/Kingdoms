@@ -282,7 +282,17 @@ namespace Kingdoms.NPC
         {
             return _controller;
         }
-        
+
+        /// <summary>
+        /// Update spawn position (used when NPC disembarks from boat)
+        /// This ensures wander radius is centered on the new position
+        /// </summary>
+        public void UpdateSpawnPosition(Vector3 newPosition)
+        {
+            _spawnPosition = newPosition;
+            Debug.Log($"{gameObject.name}: Spawn position updated to {newPosition}");
+        }
+
         #endregion
         
         #region Debug

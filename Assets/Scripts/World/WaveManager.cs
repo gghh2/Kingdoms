@@ -182,16 +182,35 @@ namespace Kingdoms.World
             
             // Determine number of NPCs for this wave
             int npcCount = Random.Range(minNPCsPerWave, maxNPCsPerWave + 1);
-            
+
+            // Get profession assignments for this wave
+            // First wave gets guaranteed Colony Leader
+            bool guaranteeLeader = (_currentWave == 1);
+            var professions = NPC.ProfessionSelector.SelectGroupProfessions(npcCount, forceColonyLeader: guaranteeLeader);
+
+            Debug.Log($"WaveManager: Wave {_currentWave} professions assigned (Colony Leader guaranteed: {guaranteeLeader})");
+
             // Spawn NPCs and add them to boat
             for (int i = 0; i < npcCount; i++)
             {
                 GameObject npc = Instantiate(npcPrefab);
-                npc.name = $"NPC_W{_currentWave:00}_{i:00}";
-                
+                npc.name = $"NPC_W{_currentWave:00}_{i:00}_{professions[i]}";
+
+                // Assign profession to NPC
+                var npcController = npc.GetComponent<NPC.NPCController>();
+                if (npcController != null)
+                {
+                    npcController.AssignProfession(professions[i]);
+                    Debug.Log($"WaveManager: {npc.name} assigned profession {professions[i]}");
+                }
+                else
+                {
+                    Debug.LogError($"WaveManager: {npc.name} has no NPCController!");
+                }
+
                 boatController.AddPassenger(npc);
             }
-            
+
             Debug.Log($"WaveManager: Wave {_currentWave} created with {npcCount} NPCs");
             
             // Start boat journey

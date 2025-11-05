@@ -348,16 +348,22 @@ namespace Kingdoms.World
                 // Set passenger position
                 passenger.transform.position = finalPosition;
 
-                // CRITICAL: Enable profession now that NPC has disembarked
+                // Get NPC controller
                 var npcController = passenger.GetComponent<NPC.NPCController>();
-                if (npcController != null && npcController.HasProfession)
+                if (npcController != null)
                 {
-                    // Get the profession component and enable it
-                    var professionComponent = passenger.GetComponent<NPC.NPCProfession>();
-                    if (professionComponent != null)
+                    // Update spawn position so wander radius centers on new position (not boat)
+                    npcController.UpdateSpawnPosition(finalPosition);
+
+                    // Enable profession now that NPC has disembarked
+                    if (npcController.HasProfession)
                     {
-                        professionComponent.enabled = true;
-                        Debug.Log($"BoatController: {passenger.name} profession {npcController.Profession} ENABLED after disembark");
+                        var professionComponent = passenger.GetComponent<NPC.NPCProfession>();
+                        if (professionComponent != null)
+                        {
+                            professionComponent.enabled = true;
+                            Debug.Log($"BoatController: {passenger.name} profession {npcController.Profession} ENABLED after disembark");
+                        }
                     }
                 }
 
