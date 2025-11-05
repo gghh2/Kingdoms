@@ -1,0 +1,190 @@
+# MTL written from Z:\Dropbox\_Projects\VellamoOpenSource\Deliveries\Ship07\Optimized\Ship07.obj
+newmtl M_Ship07_Anchor_01
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Anchor_01_Diffuse.png
+map_Bump T_Ship07_Anchor_01_Normal.png
+newmtl M_Ship07_Anchor_02
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Anchor_02_Diffuse.png
+map_Bump T_Ship07_Anchor_02_Normal.png
+newmtl M_Ship07_BarrelMetal
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_BarrelMetal_Diffuse.png
+map_Bump T_Ship07_BarrelMetal_Normal.png
+newmtl M_Ship07_BarrelWood
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_BarrelWood_Diffuse.png
+map_Bump T_Ship07_BarrelWood_Normal.png
+newmtl M_Ship07_GoldPaint
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_GoldPaint_Diffuse.png
+map_Bump T_Ship07_GoldPaint_Normal.png
+newmtl M_Ship07_Metal_01
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Metal_01_Diffuse.png
+map_Bump T_Ship07_Metal_01_Normal.png
+newmtl M_Ship07_Metal_02
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Metal_02_Diffuse.png
+map_Bump T_Ship07_Metal_02_Normal.png
+newmtl M_Ship07_Plank
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Plank_Diffuse.png
+map_Bump T_Ship07_Plank_Normal.png
+newmtl M_Ship07_PlankBlue
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_PlankBlue_Diffuse.png
+map_Bump T_Ship07_PlankBlue_Normal.png
+newmtl M_Ship07_PlankWhite
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_PlankWhite_Diffuse.png
+map_Bump T_Ship07_PlankWhite_Normal.png
+newmtl M_Ship07_Rope_01
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Rope_01_Diffuse.png
+map_Bump T_Ship07_Rope_01_Normal.png
+newmtl M_Ship07_Rope_02
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Rope_02_Diffuse.png
+map_Bump T_Ship07_Rope_02_Normal.png
+newmtl M_Ship07_Rope_03
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Rope_03_Diffuse.png
+map_Bump T_Ship07_Rope_03_Normal.png
+newmtl M_Ship07_Rope_04
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Rope_04_Diffuse.png
+map_Bump T_Ship07_Rope_04_Normal.png
+newmtl M_Ship07_Sail
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Sail_Diffuse.png
+map_Bump T_Ship07_Sail_Normal.png
+newmtl M_Ship07_SwivelGun
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_SwivelGun_Diffuse.png
+map_Bump T_Ship07_SwivelGun_Normal.png
+newmtl M_Ship07_Window
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_Window_Diffuse.png
+map_Bump T_Ship07_Window_Normal.png
+newmtl M_Ship07_WoodPlain_01
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_WoodPlain_01_Diffuse.png
+map_Bump T_Ship07_WoodPlain_01_Normal.png
+newmtl M_Ship07_WoodPlain_02
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_WoodPlain_02_Diffuse.png
+map_Bump T_Ship07_WoodPlain_02_Normal.png
+newmtl M_Ship07_WoodPlain_03
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_WoodPlain_03_Diffuse.png
+map_Bump T_Ship07_WoodPlain_03_Normal.png
+newmtl M_Ship07_WoodPlain_04
+Kd 0.461927 0.461927 0.461927
+Ns 256
+d 1
+illum 2
+Ka 0 0 0
+Ks 0.04 0.04 0.04
+map_Kd T_Ship07_WoodPlain_04_Diffuse.png
+map_Bump T_Ship07_WoodPlain_04_Normal.png
