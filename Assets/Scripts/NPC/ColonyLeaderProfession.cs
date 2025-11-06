@@ -18,32 +18,48 @@ namespace Kingdoms.NPC
         #endregion
         
         #region Serialized Fields
-        
+
         [Header("Colony Leader Settings")]
         [Tooltip("Minimum distance from other colonies")]
         [SerializeField] private float minColonyDistance = 50f;
-        
-        [Tooltip("How long to search for ideal spot (seconds)")]
-        [SerializeField] private float searchDuration = 30f;
-        
-        [Tooltip("Movement speed while searching")]
+
+        [Tooltip("How long to explore before searching (seconds)")]
+        [SerializeField] private float explorationDuration = 60f;
+
+        [Tooltip("Minimum distance from spawn point (beach) before settling")]
+        [SerializeField] private float minDistanceFromSpawn = 80f;
+
+        [Tooltip("Movement speed while exploring/searching")]
         [SerializeField] private float searchSpeed = 3f;
-        
+
+        [Header("Terrain Preferences")]
+        [Tooltip("Ideal slope angle (degrees) - gentle hills")]
+        [SerializeField] private float idealSlope = 15f;
+
+        [Tooltip("Maximum acceptable slope (degrees)")]
+        [SerializeField] private float maxSlope = 35f;
+
+        [Tooltip("Terrain analysis radius (meters)")]
+        [SerializeField] private float analysisRadius = 10f;
+
         #endregion
         
         #region Private Fields
-        
+
         private enum LeaderState
         {
-            Searching,      // Looking for ideal spot
+            Exploring,      // Wandering away from beach to find general area
+            Searching,      // Looking for ideal spot within area
             Evaluating,     // Checking if location is good
             Founding        // Creating colony at chosen spot
         }
-        
-        private LeaderState _currentState = LeaderState.Searching;
+
+        private LeaderState _currentState = LeaderState.Exploring;
+        private Vector3 _spawnPosition;
         private Vector3 _evaluationPoint;
-        private float _searchTimer = 0f;
-        
+        private float _stateTimer = 0f;
+        private Vector3 _explorationTarget;
+
         #endregion
         
         #region Profession Implementation
@@ -51,25 +67,34 @@ namespace Kingdoms.NPC
         protected override void OnProfessionStart()
         {
             base.OnProfessionStart();
-            
-            _currentState = LeaderState.Searching;
-            _searchTimer = 0f;
-            
-            Debug.Log($"{gameObject.name}: Colony Leader started searching for settlement location");
+
+            // Remember spawn position (beach) to avoid settling too close
+            _spawnPosition = transform.position;
+            _currentState = LeaderState.Exploring;
+            _stateTimer = 0f;
+
+            // Pick initial exploration target away from spawn
+            _explorationTarget = GetExplorationTarget();
+
+            Debug.Log($"{gameObject.name}: Colony Leader started exploring (will search after {explorationDuration}s, min distance from spawn: {minDistanceFromSpawn}m)");
         }
         
         protected override void OnProfessionUpdate()
         {
             switch (_currentState)
             {
+                case LeaderState.Exploring:
+                    UpdateExploring();
+                    break;
+
                 case LeaderState.Searching:
                     UpdateSearching();
                     break;
-                    
+
                 case LeaderState.Evaluating:
                     UpdateEvaluating();
                     break;
-                    
+
                 case LeaderState.Founding:
                     UpdateFounding();
                     break;
@@ -79,20 +104,50 @@ namespace Kingdoms.NPC
         #endregion
         
         #region State Logic
-        
+
+        /// <summary>
+        /// Explore the map by wandering away from spawn point (beach)
+        /// </summary>
+        private void UpdateExploring()
+        {
+            _stateTimer += Time.deltaTime;
+
+            // Move towards exploration target
+            bool reached = MoveTowards(_explorationTarget, searchSpeed);
+
+            if (reached)
+            {
+                // Pick new exploration target
+                _explorationTarget = GetExplorationTarget();
+            }
+
+            // After exploration time, switch to searching
+            float distanceFromSpawn = Vector3.Distance(transform.position, _spawnPosition);
+            if (_stateTimer >= explorationDuration && distanceFromSpawn >= minDistanceFromSpawn)
+            {
+                Debug.Log($"{gameObject.name}: Exploration complete ({distanceFromSpawn:F1}m from spawn), now searching for ideal colony site");
+                _currentState = LeaderState.Searching;
+                _stateTimer = 0f;
+            }
+            else if (_stateTimer >= explorationDuration)
+            {
+                Debug.Log($"{gameObject.name}: Exploration time up but only {distanceFromSpawn:F1}m from spawn (need {minDistanceFromSpawn}m), continuing exploration");
+            }
+        }
+
         /// <summary>
         /// Search for ideal colony location
         /// </summary>
         private void UpdateSearching()
         {
-            _searchTimer += Time.deltaTime;
-            
+            _stateTimer += Time.deltaTime;
+
             // Pick random evaluation point nearby
-            if (_searchTimer >= 5f) // Evaluate every 5 seconds
+            if (_stateTimer >= 5f) // Evaluate every 5 seconds
             {
                 _evaluationPoint = GetRandomPointNearby(20f);
                 _currentState = LeaderState.Evaluating;
-                _searchTimer = 0f;
+                _stateTimer = 0f;
             }
             else
             {
@@ -148,19 +203,120 @@ namespace Kingdoms.NPC
         
         /// <summary>
         /// Check if location is suitable for colony
+        /// Analyzes terrain slope, distance from spawn, and other factors
         /// </summary>
         private bool IsLocationSuitable(Vector3 position)
         {
-            // TODO: Add more sophisticated checks:
-            // - Terrain flatness
-            // - Distance from water
-            // - Resource availability nearby
-            // - Not too close to other colonies
-            
-            // For now, simple random chance to simulate evaluation
-            return Random.value > 0.7f; // 30% chance to find good spot
+            float score = 0f;
+            int checks = 0;
+
+            // 1. Check distance from spawn (beach) - must be minimum distance
+            float distanceFromSpawn = Vector3.Distance(position, _spawnPosition);
+            if (distanceFromSpawn < minDistanceFromSpawn)
+            {
+                Debug.Log($"{gameObject.name}: Location too close to spawn ({distanceFromSpawn:F1}m < {minDistanceFromSpawn}m)");
+                return false;
+            }
+
+            // Bonus for being further from spawn (up to 2x min distance)
+            float spawnDistanceScore = Mathf.Clamp01((distanceFromSpawn - minDistanceFromSpawn) / minDistanceFromSpawn);
+            score += spawnDistanceScore * 25f; // Worth 25 points
+            checks++;
+
+            // 2. Analyze terrain slope - prefer gentle hills
+            float averageSlope = AnalyzeTerrainSlope(position);
+            float slopeScore = GetSlopeScore(averageSlope);
+            score += slopeScore * 50f; // Worth 50 points (most important)
+            checks++;
+
+            Debug.Log($"{gameObject.name}: Location score: {score:F1}/100 (distance: {distanceFromSpawn:F1}m, slope: {averageSlope:F1}°, slopeScore: {slopeScore:F2})");
+
+            // Location is suitable if score is high enough
+            return score >= 50f; // Need at least 50/100 points
+        }
+
+        /// <summary>
+        /// Analyze terrain slope around a position
+        /// Returns average slope in degrees
+        /// </summary>
+        private float AnalyzeTerrainSlope(Vector3 center)
+        {
+            int sampleCount = 8; // 8 directions
+            float totalSlope = 0f;
+            int validSamples = 0;
+
+            // Sample terrain in circle around center
+            for (int i = 0; i < sampleCount; i++)
+            {
+                float angle = (i / (float)sampleCount) * 360f * Mathf.Deg2Rad;
+                Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * analysisRadius;
+                Vector3 samplePos = center + offset;
+
+                // Raycast to get terrain height at sample point
+                if (Physics.Raycast(samplePos + Vector3.up * 50f, Vector3.down, out RaycastHit hit, 100f, LayerMask.GetMask("Ground")))
+                {
+                    // Calculate slope between center and sample point
+                    float heightDiff = hit.point.y - center.y;
+                    float horizontalDist = analysisRadius;
+                    float slopeAngle = Mathf.Abs(Mathf.Atan2(heightDiff, horizontalDist) * Mathf.Rad2Deg);
+
+                    totalSlope += slopeAngle;
+                    validSamples++;
+                }
+            }
+
+            if (validSamples == 0) return 999f; // Invalid location
+
+            return totalSlope / validSamples;
+        }
+
+        /// <summary>
+        /// Get score for a given slope (0-1, 1 being ideal)
+        /// </summary>
+        private float GetSlopeScore(float slope)
+        {
+            // Too steep = bad
+            if (slope > maxSlope)
+            {
+                return 0f;
+            }
+
+            // Calculate how close to ideal slope
+            float slopeDiff = Mathf.Abs(slope - idealSlope);
+            float slopeRange = maxSlope - idealSlope;
+
+            // Score decreases as we move away from ideal
+            float score = 1f - (slopeDiff / slopeRange);
+            return Mathf.Clamp01(score);
         }
         
+        /// <summary>
+        /// Get exploration target that moves away from spawn point
+        /// </summary>
+        private Vector3 GetExplorationTarget()
+        {
+            // Direction away from spawn
+            Vector3 awayFromSpawn = (transform.position - _spawnPosition).normalized;
+
+            // Add some randomness to the direction (within 60 degrees cone)
+            float randomAngle = Random.Range(-60f, 60f);
+            Quaternion rotation = Quaternion.Euler(0f, randomAngle, 0f);
+            Vector3 direction = rotation * awayFromSpawn;
+
+            // Target at a good distance
+            float targetDistance = Random.Range(30f, 50f);
+            Vector3 targetPoint = transform.position + direction * targetDistance;
+
+            // Use raycast to ensure point is on terrain
+            if (Physics.Raycast(targetPoint + Vector3.up * 50f, Vector3.down, out RaycastHit hit, 100f, LayerMask.GetMask("Ground")))
+            {
+                return hit.point;
+            }
+
+            // Fallback: just move in that direction
+            return targetPoint;
+        }
+
         /// <summary>
         /// Get random point nearby
         /// </summary>
@@ -168,24 +324,40 @@ namespace Kingdoms.NPC
         {
             Vector2 randomCircle = Random.insideUnitCircle * radius;
             Vector3 point = transform.position + new Vector3(randomCircle.x, 0f, randomCircle.y);
-            
+
             // Use raycast to ensure point is on terrain
-            if (Physics.Raycast(point + Vector3.up * 50f, Vector3.down, out RaycastHit hit, 100f))
+            if (Physics.Raycast(point + Vector3.up * 50f, Vector3.down, out RaycastHit hit, 100f, LayerMask.GetMask("Ground")))
             {
                 return hit.point;
             }
-            
+
             return point;
         }
         
         #endregion
         
         #region Debug
-        
+
         protected override void OnDrawGizmosSelected()
         {
             if (!Application.isPlaying) return;
-            
+
+            // Show spawn position (beach)
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(_spawnPosition, 5f);
+
+            // Show minimum distance from spawn
+            Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
+            Gizmos.DrawWireSphere(_spawnPosition, minDistanceFromSpawn);
+
+            // Show exploration target
+            if (_currentState == LeaderState.Exploring)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireSphere(_explorationTarget, 3f);
+                Gizmos.DrawLine(transform.position, _explorationTarget);
+            }
+
             // Show current evaluation point
             if (_currentState == LeaderState.Evaluating)
             {
@@ -193,12 +365,15 @@ namespace Kingdoms.NPC
                 Gizmos.DrawWireSphere(_evaluationPoint, 2f);
                 Gizmos.DrawLine(transform.position, _evaluationPoint);
             }
-            
-            // Show search radius
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(transform.position, minColonyDistance);
+
+            // Show colony location when founding
+            if (_currentState == LeaderState.Founding)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawWireSphere(transform.position, minColonyDistance);
+            }
         }
-        
+
         #endregion
     }
 }
